@@ -4,6 +4,48 @@
 """
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
+import zipfile
+import os
+import pandas as pd
+
+
+def extraer_archivos(origen_zip, destino_extracto):
+    """
+    Descomprime un archivo ZIP en la carpeta destino.
+    """
+    with zipfile.ZipFile(origen_zip, 'r') as manejador_zip:
+        manejador_zip.extractall(destino_extracto)
+
+
+def leer_texto_desde_archivo(ruta_completa):
+    """
+    Lee el contenido de un archivo de texto y lo retorna como string limpio.
+    """
+    with open(ruta_completa, 'r', encoding='utf-8') as archivo:
+        contenido = archivo.read().strip()
+    return contenido
+
+
+def construir_dataframe_desde_carpetas(ruta_carpeta_principal):
+    """
+    Recorre las subcarpetas (positivo, negativo, neutral) y construye un DataFrame.
+    """
+    registros = []
+    categorias = ["positive", "negative", "neutral"]
+
+    for categoria in categorias:
+        directorio_categoria = os.path.join(ruta_carpeta_principal, categoria)
+
+        for nombre_archivo in sorted(os.listdir(directorio_categoria)):
+            ruta_completa = os.path.join(directorio_categoria, nombre_archivo)
+            texto_frase = leer_texto_desde_archivo(ruta_completa)
+
+            registros.append({
+                "phrase": texto_frase,
+                "target": categoria
+            })
+
+    return pd.DataFrame(registros)
 
 
 def pregunta_01():
@@ -71,3 +113,19 @@ def pregunta_01():
 
 
     """
+    """
+    Genera los datasets de entrenamiento y prueba a partir del ZIP original.
+    """
+    # 1. Descomprimir el archivo
+    extraer_archivos("files/input.zip", "files")
+
+    # 2. Crear los DataFrames para train y test
+    df_entrenamiento = construir_dataframe_desde_carpetas("files/input/train")
+    df_prueba = construir_dataframe_desde_carpetas("files/input/test")
+
+    # 3. Crear carpeta de salida si no existe
+    os.makedirs("files/output", exist_ok=True)
+
+    # 4. Guardar los archivos CSV
+    df_entrenamiento.to_csv("files/output/train_dataset.csv", index=False)
+    df_prueba.to_csv("files/output/test_dataset.csv", index=False)
